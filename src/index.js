@@ -21,6 +21,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/", (req, res) => {
+  res.json({ success: true, message: "Server is running" });
+});
+
 // Connect to MongoDB using modern syntax
 mongoose
   .connect(process.env.MONGODB_URI)
