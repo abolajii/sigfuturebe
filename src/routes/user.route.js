@@ -52,6 +52,12 @@ router.delete(
 // Signal routes
 router.get("/signals", verifyToken, userController.getAllUserSignals);
 
+router.get(
+  "/signal/stats",
+  verifyToken,
+  userController.getTotalProfitFromSignal
+);
+
 // Revenue routes
 router.get("/revenue", verifyToken, userController.getUserRevenue);
 router.post("/revenue", verifyToken, userController.createUserRevenue); // New endpoint for creating revenue

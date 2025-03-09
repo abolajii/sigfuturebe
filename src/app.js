@@ -9,6 +9,7 @@ require("dotenv").config();
 const authRoute = require("./routes/auth.route");
 const userRoute = require("./routes/user.route");
 const User = require("./models/User");
+const Revenue = require("./models/Revenue");
 const app = express();
 
 // Middleware
@@ -52,16 +53,20 @@ const allUser = {
   admin: {
     _id: "67b1bc98d981de5d7bd00023",
     weekly_capital: 3900,
-    running_capital: 3900,
+    running_capital: 3934.64,
     report: {
       total_withdrawals: 59.88,
-      total_revenue: 3900,
+      total_revenue: 3934.64,
     },
   },
   innocent: {
     _id: "67b1bca8a00bacd62f1e30ed",
     weekly_capital: 836.42,
-    running_capital: 836.42,
+    running_capital: 843.78,
+    report: {
+      total_withdrawals: 0,
+      total_revenue: 843.78,
+    },
   },
 };
 
@@ -70,6 +75,7 @@ const updateUsers = async () => {
     const admin = allUser.admin;
     const innocent = allUser.innocent;
 
+    // Update users
     const updatedAdmin = await User.findByIdAndUpdate(
       admin._id,
       {
@@ -88,12 +94,42 @@ const updateUsers = async () => {
       { new: true }
     );
 
+    // Update revenue reports for each user
+    const updatedAdminRevenue = await Revenue.findOneAndUpdate(
+      { user: admin._id, month: "March" },
+      {
+        // total_revenue: 0,
+        // total_withdrawals: 0,
+
+        total_revenue: admin.report.total_revenue,
+        total_withdrawals: admin.report.total_withdrawals,
+      },
+      { new: true, upsert: true }
+    );
+
+    const updatedInnocentRevenue = await Revenue.findOneAndUpdate(
+      { user: innocent._id, month: "March" },
+      {
+        // total_revenue: 0,
+        // total_withdrawals: 0,
+        total_revenue: innocent.report.total_revenue,
+        total_withdrawals: innocent.report.total_withdrawals,
+      },
+      { new: true, upsert: true }
+    );
+
     console.log("Updated users:", updatedAdmin, updatedInnocent);
+    console.log(
+      "Updated revenues:",
+      updatedAdminRevenue,
+      updatedInnocentRevenue
+    );
   } catch (error) {
     console.error("Error updating users:", error);
   }
 };
 
+// updateUsers();
 // Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
