@@ -102,7 +102,7 @@ const updateUsers = async () => {
         // total_withdrawals: 0,
 
         total_revenue: admin.report.total_revenue,
-        total_withdrawals: admin.report.total_withdrawals,
+        total_withdrawal: admin.report.total_withdrawals,
       },
       { new: true, upsert: true }
     );
@@ -113,7 +113,7 @@ const updateUsers = async () => {
         // total_revenue: 0,
         // total_withdrawals: 0,
         total_revenue: innocent.report.total_revenue,
-        total_withdrawals: innocent.report.total_withdrawals,
+        total_withdrawal: innocent.report.total_withdrawals,
       },
       { new: true, upsert: true }
     );
@@ -129,7 +129,7 @@ const updateUsers = async () => {
   }
 };
 
-// updateUsers();
+updateUsers();
 // Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
