@@ -58,14 +58,16 @@ const allUser = {
     weekly_capital: 3900,
     running_capital: 3900,
     report: {
-      total_withdrawals: 59.88,
-      total_revenue: 3900,
+      total_revenue: 3968,
     },
   },
   innocent: {
     _id: "67b1bca8a00bacd62f1e30ed",
     weekly_capital: 836.42,
     running_capital: 836.42,
+    report: {
+      total_revenue: 3900,
+    },
   },
 };
 

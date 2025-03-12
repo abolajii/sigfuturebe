@@ -8,8 +8,8 @@ require("dotenv").config();
 
 const authRoute = require("./routes/auth.route");
 const userRoute = require("./routes/user.route");
-const User = require("./models/User");
-const Revenue = require("./models/Revenue");
+const { updateUsersSignal } = require("./utils/job");
+
 const app = express();
 
 // Middleware
@@ -49,103 +49,16 @@ io.on("connection", (socket) => {
 app.use("/api/v1", authRoute);
 app.use("/api/v1", userRoute);
 
-const allUser = {
-  admin: {
-    _id: "67b1bc98d981de5d7bd00023",
-    weekly_capital: 3900,
-    running_capital: 3934.64,
-    report: {
-      total_withdrawals: 59.88,
-      total_revenue: 3934.64,
-    },
-  },
-  innocent: {
-    _id: "67b1bca8a00bacd62f1e30ed",
-    weekly_capital: 836.42,
-    running_capital: 843.78,
-    report: {
-      total_withdrawals: 0,
-      total_revenue: 843.78,
-    },
-  },
-};
+app.get("/api/cron", (req, res) => {
+  console.log("Cron job triggered at:", new Date().toLocaleString());
+  updateUsersSignal();
+  res.json({ message: "Cron job executed successfully!" });
+});
 
-const updateUsers = async () => {
-  try {
-    const admin = allUser.admin;
-    const innocent = allUser.innocent;
-
-    // Update users
-    const updatedAdmin = await User.findByIdAndUpdate(
-      admin._id,
-      {
-        weekly_capital: admin.weekly_capital,
-        running_capital: admin.running_capital,
-      },
-      { new: true }
-    );
-
-    const updatedInnocent = await User.findByIdAndUpdate(
-      innocent._id,
-      {
-        weekly_capital: innocent.weekly_capital,
-        running_capital: innocent.running_capital,
-      },
-      { new: true }
-    );
-
-    // Update revenue reports for each user
-    const updatedAdminRevenue = await Revenue.findOneAndUpdate(
-      { user: admin._id, month: "March" },
-      {
-        // total_revenue: 0,
-        // total_withdrawals: 0,
-
-        total_revenue: admin.report.total_revenue,
-        total_withdrawal: admin.report.total_withdrawals,
-      },
-      { new: true, upsert: true }
-    );
-
-    const updatedInnocentRevenue = await Revenue.findOneAndUpdate(
-      { user: innocent._id, month: "March" },
-      {
-        // total_revenue: 0,
-        // total_withdrawals: 0,
-        total_revenue: innocent.report.total_revenue,
-        total_withdrawal: innocent.report.total_withdrawals,
-      },
-      { new: true, upsert: true }
-    );
-
-    console.log("Updated users:", updatedAdmin, updatedInnocent);
-    console.log(
-      "Updated revenues:",
-      updatedAdminRevenue,
-      updatedInnocentRevenue
-    );
-  } catch (error) {
-    console.error("Error updating users:", error);
-  }
-};
-
-updateUsers();
-// Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-const fetchUser = async () => {
-  try {
-    const users = await User.find({});
-    console.log("User:", users);
-
-    // updateUsers();
-  } catch (error) {
-    console.error("Error fetching user:", error);
-  }
-};
 
 // fetchUser();
 
