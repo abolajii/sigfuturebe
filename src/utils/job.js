@@ -21,92 +21,141 @@ exports.updateUsersSignal = async () => {
 
     // Determine which time slot to check based on current time
     const currentHour = today.getHours();
-    const timeSlotToCheck =
-      currentHour < 19 ? morningTimeSlot : eveningTimeSlot;
 
-    console.log(`Checking for signals on ${formattedDate}`);
+    console.log(`Processing signals for ${formattedDate}`);
 
     for (const user of users) {
-      // Get the user's most recent signal to use as base for calculations
+      // Process morning slot first if we're in the evening
+      if (currentHour >= 19) {
+        await processTimeSlot(user, morningTimeSlot, true);
+      }
+
+      // Then process the current time slot (morning or evening)
+      const timeSlotToCheck =
+        currentHour < 19 ? morningTimeSlot : eveningTimeSlot;
+      await processTimeSlot(
+        user,
+        timeSlotToCheck,
+        timeSlotToCheck === morningTimeSlot
+      );
+    }
+
+    console.log("Signal update process completed successfully");
+  } catch (error) {
+    console.error("Error updating user signals:", error);
+  }
+};
+
+// Helper function to process a specific time slot for a user
+const processTimeSlot = async (user, timeSlot, isMorningSlot) => {
+  try {
+    // Check if signal for this time slot already exists and is traded
+    const existingTradedSignal = await Signal.findOne({
+      user: user._id,
+      time: timeSlot,
+      traded: true,
+    });
+
+    if (existingTradedSignal) {
+      console.log(
+        `Signal for ${timeSlot} already processed for user ${user._id}`
+      );
+      return;
+    }
+
+    // Check if today's signal exists but is untraded
+    const untradedSignal = await Signal.findOne({
+      user: user._id,
+      time: timeSlot,
+      traded: false,
+    });
+
+    // For morning slot, always use user.running_capital
+    // For evening slot, get the latest signal (which should be the morning slot)
+    let startingCapital;
+
+    if (isMorningSlot) {
+      startingCapital = user.running_capital;
+    } else {
+      // For evening slot, get the latest signal (which should be morning slot)
       const latestSignal = await Signal.findOne({
         user: user._id,
         traded: true,
         status: "completed",
       }).sort({ time: -1 });
 
-      if (!latestSignal) {
-        console.log(`No previous signals found for user ${user._id}`);
-        continue;
-      }
+      startingCapital = latestSignal
+        ? latestSignal.finalCapital
+        : user.running_capital;
+    }
 
-      // Check if today's signal exists but is untraded
-      const todaySignal = await Signal.findOne({
+    // If no starting capital is found, log and exit
+    if (!startingCapital) {
+      console.log(`No starting capital found for user ${user._id}`);
+      return;
+    }
+
+    // Calculate profit
+    const { balanceBeforeTrade, profitFromTrade, balanceAfterTrade } =
+      calculateProfit(startingCapital);
+
+    if (untradedSignal) {
+      console.log(
+        `Processing existing untraded signal for user ${user._id} at ${timeSlot}`
+      );
+
+      // Update the signal
+      untradedSignal.startingCapital = balanceBeforeTrade;
+      untradedSignal.finalCapital = balanceAfterTrade;
+      untradedSignal.profit = profitFromTrade;
+      untradedSignal.traded = true;
+      untradedSignal.status = "completed";
+
+      await untradedSignal.save();
+      console.log(`Updated signal ${untradedSignal._id} for user ${user._id}`);
+    } else {
+      // Find the signal number from latest signal
+      const latestSignal = await Signal.findOne({
         user: user._id,
-        time: timeSlotToCheck,
-        traded: false,
-      });
+      }).sort({ time: -1 });
 
-      if (todaySignal) {
-        console.log(
-          `Processing existing untraded signal for user ${user._id} at ${timeSlotToCheck}`
-        );
-
-        // Calculate profit based on the latest completed signal
-        const { balanceBeforeTrade, profitFromTrade, balanceAfterTrade } =
-          calculateProfit(latestSignal.finalCapital);
-
-        // Update the signal
-        todaySignal.startingCapital = balanceBeforeTrade;
-        todaySignal.finalCapital = balanceAfterTrade;
-        todaySignal.profit = profitFromTrade;
-        todaySignal.traded = true;
-        todaySignal.status = "completed";
-
-        user.running_capital = balanceAfterTrade;
-        await updateUserRevenueForTheMonth(user._id, profitFromTrade);
-
-        await todaySignal.save();
-        await user.save();
-        console.log(`Updated signal ${todaySignal._id} for user ${user._id}`);
-      } else {
-        // Determine the next signal number
-        const signalNumber = latestSignal.title.includes("Signal")
+      const signalNumber =
+        latestSignal && latestSignal.title.includes("Signal")
           ? parseInt(latestSignal.title.split(" ")[1]) + 1
           : 1;
 
-        console.log(
-          `Creating new signal for user ${user._id} at ${timeSlotToCheck}`
-        );
+      console.log(`Creating new signal for user ${user._id} at ${timeSlot}`);
 
-        // Calculate profit based on the latest signal
-        const { balanceBeforeTrade, profitFromTrade, balanceAfterTrade } =
-          calculateProfit(latestSignal.finalCapital);
+      // Create a new signal
+      const newSignal = new Signal({
+        startingCapital: balanceBeforeTrade,
+        finalCapital: balanceAfterTrade,
+        time: timeSlot,
+        title: `Signal ${signalNumber}`,
+        user: user._id,
+        traded: true,
+        profit: profitFromTrade,
+        status: "completed",
+      });
 
-        // Create a new signal
-        const newSignal = new Signal({
-          startingCapital: balanceBeforeTrade,
-          finalCapital: balanceAfterTrade,
-          time: timeSlotToCheck,
-          title: `Signal ${signalNumber}`,
-          user: user._id,
-          traded: true,
-          profit: profitFromTrade,
-          status: "completed",
-        });
-
-        await newSignal.save();
-        user.running_capital = balanceAfterTrade;
-        await user.save();
-
-        await updateUserRevenueForTheMonth(user._id, profitFromTrade);
-
-        console.log(`Created new signal ${newSignal._id} for user ${user._id}`);
-      }
+      await newSignal.save();
+      console.log(`Created new signal ${newSignal._id} for user ${user._id}`);
     }
 
-    console.log("Signal update process completed successfully");
+    // Update user's running capital and save
+    user.running_capital = balanceAfterTrade;
+    await user.save();
+
+    // Update monthly revenue with the profit
+    await updateUserRevenueForTheMonth(user._id, profitFromTrade);
+
+    return balanceAfterTrade;
   } catch (error) {
-    console.error("Error updating user signals:", error);
+    console.error(
+      `Error processing time slot ${timeSlot} for user ${user._id}:`,
+      error
+    );
+    throw error;
   }
 };
 
