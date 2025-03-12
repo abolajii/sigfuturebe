@@ -176,7 +176,7 @@ const calculateProfit = (recentCapital) => {
 
 const updateUserRevenueForTheMonth = async (userId, profitAmount) => {
   const today = new Date();
-  const month = today.getMonth() + 1;
+  const month = today.getMonth();
   console.log(month);
   const months = [
     "January",
