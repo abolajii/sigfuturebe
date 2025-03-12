@@ -147,7 +147,7 @@ const processTimeSlot = async (user, timeSlot, isMorningSlot) => {
     await user.save();
 
     // Update monthly revenue with the profit
-    await updateUserRevenueForTheMonth(user._id, profitFromTrade);
+    await updateUserRevenueForTheMonth(user._id, balanceAfterTrade);
 
     return balanceAfterTrade;
   } catch (error) {
@@ -176,10 +176,22 @@ const calculateProfit = (recentCapital) => {
 
 const updateUserRevenueForTheMonth = async (userId, profitAmount) => {
   const today = new Date();
-  const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}`;
+  const month = today.getMonth() + 1;
+  console.log(month);
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
 
   try {
     const user = await User.findById(userId);
@@ -198,7 +210,7 @@ const updateUserRevenueForTheMonth = async (userId, profitAmount) => {
 
     // Update the revenue record
     const revenue = await Revenue.findOneAndUpdate(
-      { user: userId, month },
+      { user: userId, month: months[month] },
       {
         total_revenue: newTotal,
       },

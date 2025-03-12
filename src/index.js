@@ -61,12 +61,9 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-const fetchSignals = async () => {
-  const signals = await Signal.find({});
-  console.log(signals);
-};
+const fetchSignals = async () => {};
 
-// fetchSignals();
+fetchSignals();
 
 // For serverless environments
 module.exports = (req, res) => app(req, res);
