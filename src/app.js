@@ -9,6 +9,7 @@ require("dotenv").config();
 const authRoute = require("./routes/auth.route");
 const userRoute = require("./routes/user.route");
 const { updateUsersSignal } = require("./utils/job");
+const Signal = require("./models/Signal");
 
 const app = express();
 
@@ -60,7 +61,12 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// fetchUser();
+const fetchSignals = async () => {
+  const signals = await Signal.find({});
+  console.log(signals);
+};
+
+// fetchSignals();
 
 // For serverless environments
 module.exports = (req, res) => app(req, res);

@@ -515,3 +515,97 @@ exports.getTotalProfitFromSignal = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
+exports.getOrCreateUserSignal = async (req, res) => {
+  try {
+    const { id } = req.user;
+    const today = new Date().toISOString().split("T")[0];
+
+    const user = await User.findOne({ _id: id });
+
+    let signals;
+
+    signals = await Signal.find({
+      user,
+      time: new RegExp(today, "i"), // Case insensitive search for today's date
+    }).sort({ time: 1 });
+
+    if (signals.length === 0) {
+      const result = await createDailySignalForUser(user);
+      if (!result.success) {
+        return res.status(500).json({
+          success: false,
+          error: result.error,
+        });
+      }
+
+      signals = result.signals;
+    }
+
+    res.json({ success: true, signals });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+};
+
+const createDailySignalForUser = async (user) => {
+  try {
+    // First fetch the user to get the capital
+    const userCapital = await User.findById(user);
+    if (!userCapital) {
+      throw new Error("User not found");
+    }
+
+    // Get today's date in ISO format (YYYY-MM-DD)
+    const today = new Date().toISOString().split("T")[0];
+
+    // Check if user has any signals for today
+    const existingSignals = await Signal.findOne({
+      user,
+      time: new RegExp(today, "i"), // Case insensitive search for today's date
+    });
+
+    if (existingSignals) {
+      return {
+        success: false,
+        error: "User already has signals for today",
+      };
+    }
+
+    const signals = [
+      {
+        title: "Signal 1",
+        time: `${today} 14:00 - 14:30`,
+        traded: false,
+        status: "not-started",
+        startingCapital: parseFloat(userCapital.running_capital) || 0,
+        finalCapital: 0,
+        user,
+      },
+      {
+        title: "Signal 2",
+        time: `${today} 19:00 - 19:30`,
+        traded: false,
+        status: "not-started",
+        startingCapital: 0,
+        finalCapital: 0,
+        user,
+      },
+    ];
+
+    const createdSignals = await Signal.insertMany(signals);
+
+    console.log(createdSignals);
+
+    return {
+      success: true,
+      signals: createdSignals,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
