@@ -50,7 +50,7 @@ router.delete(
 );
 
 // Signal routes
-router.get("/signals", verifyToken, userController.getAllUserSignals);
+router.get("/signal", verifyToken, userController.getOrCreateUserSignal);
 
 router.get(
   "/signal/stats",
