@@ -35,6 +35,7 @@ router.put("/user", verifyToken, userController.updateUser);
 
 // Deposit routes
 router.post("/deposit", verifyToken, userController.createDeposit);
+
 router.get("/deposit", verifyToken, userController.getAllUserDeposits);
 router.put("/deposit/:id", verifyToken, userController.updateUserDeposit);
 router.delete("/deposit/:id", verifyToken, userController.deleteUserDeposit);

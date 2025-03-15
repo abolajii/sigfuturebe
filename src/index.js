@@ -10,6 +10,8 @@ const authRoute = require("./routes/auth.route");
 const userRoute = require("./routes/user.route");
 const { updateUsersSignal } = require("./utils/job");
 const Signal = require("./models/Signal");
+const Revenue = require("./models/Revenue");
+const User = require("./models/User");
 
 const app = express();
 
@@ -61,9 +63,22 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-const fetchSignals = async () => {};
+const updateRevenue = async () => {
+  // const admin = {
+  //   id: "67b1bc98d981de5d7bd00023",
+  //   revenue: 4146.67,
+  // };
+  const innocent = {
+    id: "67b1bca8a00bacd62f1e30ed",
+    revenue: 897.15,
+  };
 
-fetchSignals();
+  const user = await Signal.findOneAndDelete({ title: "Signal 3" });
+
+  console.log("Revenue update completed");
+};
+
+// updateRevenue();
 
 // For serverless environments
 module.exports = (req, res) => app(req, res);

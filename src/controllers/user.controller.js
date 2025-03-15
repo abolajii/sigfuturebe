@@ -9,6 +9,7 @@ const {
   updateRevenueForDepositChange,
   updateRevenueForWithdrawalChange,
 } = require("../helper/index2");
+const Withdraw = require("../models/Withdraw");
 
 // Update user profile
 exports.updateUser = async (req, res) => {
@@ -165,7 +166,7 @@ exports.getAllUserWithdrawal = async (req, res) => {
       if (endDate) query.date.$lte = new Date(endDate);
     }
 
-    const withdrawals = await Withdrawal.find(query)
+    const withdrawals = await Withdraw.find(query)
       .sort({ date: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -186,6 +187,19 @@ exports.getAllUserWithdrawal = async (req, res) => {
       .json({ success: false, message: "Server error", error: error.message });
   }
 };
+
+// exports.getAllUserWithdrawal = async (req, res) => {
+//   try {
+//     const user = req.user.id;
+
+//     const withdraw = await Withdraw.find({ user }).sort({ date: -1 });
+
+//     res.json({ success: true, withdraw });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, error: "Internal server error" });
+//   }
+// };
 // Update a deposit
 exports.updateUserDeposit = async (req, res) => {
   try {
