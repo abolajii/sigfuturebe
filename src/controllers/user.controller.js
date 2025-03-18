@@ -63,7 +63,7 @@ exports.createDeposit = async (req, res) => {
     // await user.save();
 
     // Update or create revenue record
-    await updateRevenueForMonthYear(userId, date || new Date(), amount, 0, 0);
+    // await updateRevenueForMonthYear(userId, date || new Date(), amount, 0, 0);
 
     res.status(201).json({ success: true, data: deposit });
   } catch (error) {
