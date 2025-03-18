@@ -28,7 +28,10 @@ app.use((req, res, next) => {
 // Connect to MongoDB using modern syntax
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB"))
+  .then(() => {
+    console.log("Connected to MongoDB");
+    // updateRevenue();
+  })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 const server = http.createServer(app);
@@ -64,21 +67,33 @@ server.listen(PORT, () => {
 });
 
 const updateRevenue = async () => {
-  // const admin = {
-  //   id: "67b1bc98d981de5d7bd00023",
-  //   revenue: 4146.67,
-  // };
+  const admin = {
+    id: "67b1bc98d981de5d7bd00023",
+    revenue: 4404.26,
+  };
   const innocent = {
     id: "67b1bca8a00bacd62f1e30ed",
-    revenue: 897.15,
+    revenue: 945.89,
   };
 
-  const user = await Signal.findOneAndDelete({ title: "Signal 3" });
+  const user = await User.findById(admin.id);
 
-  console.log("Revenue update completed");
+  const revenue = await Revenue.findOne({
+    user: admin.id,
+    month: "March",
+  });
+
+  user.running_capital = admin.revenue;
+  // user.weekly_capital = innocent.revenue;
+
+  revenue.total_revenue = admin.revenue;
+  // revenue.total_withdrawal += 75;
+
+  await revenue.save();
+  await user.save();
+
+  console.log("Doneeee");
 };
-
-// updateRevenue();
 
 // For serverless environments
 module.exports = (req, res) => app(req, res);
