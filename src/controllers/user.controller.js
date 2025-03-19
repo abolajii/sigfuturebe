@@ -311,40 +311,28 @@ exports.updateUserWithdrawal = async (req, res) => {
 // Delete a deposit
 exports.deleteUserDeposit = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const depositId = req.params.id;
-
-    // Find the deposit and ensure it belongs to the user
-    const deposit = await Deposit.findOne({ _id: depositId, user: userId });
+    // Find the deposit first to get the amount
+    const deposit = await Deposit.findById(req.params.id);
 
     if (!deposit) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Deposit not found" });
+      return res.status(404).json({
+        status: "fail",
+        message: "Deposit not found.",
+      });
     }
 
-    // Update user's running capital
-    const user = await User.findById(userId);
-    // user.running_capital -= deposit.amount + (deposit.bonus || 0);
-    // await user.save();
+    // Now delete the deposit record
+    await Deposit.findByIdAndDelete(req.params.id);
 
-    // Update revenue records
-    await updateRevenueForDepositChange(
-      deposit,
-      -(deposit.amount + (deposit.bonus || 0))
-    );
-
-    // Delete the deposit
-    await Deposit.findByIdAndDelete(depositId);
-
-    res
-      .status(200)
-      .json({ success: true, message: "Deposit deleted successfully" });
+    res.status(200).json({
+      status: "success",
+      message: "Deposit deleted successfully.",
+    });
   } catch (error) {
-    console.error("Error deleting deposit:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    res.status(500).json({
+      status: "fail",
+      message: error.message,
+    });
   }
 };
 
